@@ -1,7 +1,13 @@
 package com.example.ppolr1;
 
+import android.content.Context;
 import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -12,7 +18,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
+    private static final String TAG = "MainActivity";
     private static int BALL_STEP = 20;
 
     private ImageView ballView;
@@ -20,6 +27,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView startLabelView;
     private Timer timer = new Timer();
     private boolean wasTouched = false;
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private Float prevX = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +39,12 @@ public class MainActivity extends AppCompatActivity {
         ballView = findViewById(R.id.ball);
         holeView = findViewById(R.id.hole);
         startLabelView = findViewById(R.id.startLabel);
+
+        Log.d(TAG, "onCreate: Initializing Sensor Services");
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        Log.d(TAG, "OnCreate: Registered accelerometer listener");
     }
 
 
@@ -50,10 +66,7 @@ public class MainActivity extends AppCompatActivity {
                     checkGameEndConditions();
                 }
             }, 0, 50);
-        } else {
-            handleTouch(me);
         }
-
         return true;
     }
 
@@ -81,7 +94,37 @@ public class MainActivity extends AppCompatActivity {
         return Math.sqrt(Math.pow(ballX - holeX, 2) + Math.pow(ballY - holeY, 2));
     }
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (!wasTouched) {
+            return;
+        }
 
-    private void handleTouch(MotionEvent me) {
+        float currentX = event.values[0];
+        if (prevX == null) {
+            prevX = currentX;
+            return;
+        }
+
+
+        float deviation = prevX - currentX;
+        boolean isSignificant = Math.abs(prevX - currentX) > 0.1;
+        if (isSignificant) {
+            handlePhoneRotation(deviation);
+        }
+    }
+
+    private void handlePhoneRotation(float deviation) {
+        float currentX = ballView.getX();
+        if (deviation > 0) {
+            ballView.setX(currentX + BALL_STEP);
+        } else {
+            ballView.setX(currentX - BALL_STEP);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
 }
