@@ -1,5 +1,6 @@
 package com.example.ppolr1;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -56,11 +57,18 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    private void startResultActivity(String message) {
+        Intent intent = new Intent(getApplicationContext(), Result.class);
+        intent.putExtra(Result.EXTRA_KEY, message);
+        startActivity(intent);
+        timer.cancel();
+    }
+
     private void checkGameEndConditions() {
         if (distanceBetweenBallAndHole() < 50) {
-            timer.cancel();
+            startResultActivity("WIN");
         } else if (ballView.getY() > (holeView.getY() + holeView.getHeight())) {
-            timer.cancel();
+            startResultActivity("LOOSE");
         }
     }
 
